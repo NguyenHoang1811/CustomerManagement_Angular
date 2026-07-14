@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzModalService,NzModalModule } from 'ng-zorro-antd/modal';
@@ -24,7 +24,9 @@ export class CustomerListComponent implements OnInit {
 
   constructor(
     private customerService: CustomerService,
-    private modal: NzModalService
+    private modal: NzModalService,
+    private cdr: ChangeDetectorRef,
+    private ngZone: NgZone
   ) {}
 
   ngOnInit(): void {
@@ -34,9 +36,12 @@ export class CustomerListComponent implements OnInit {
   loadData(): void {
     this.loading = true;
     this.customerService.getPage(this.pageIndex, this.pageSize).subscribe(res => {
-      this.listOfData = res.data;
-      this.total = res.total;
-      this.loading = false;
+      this.ngZone.run(() => {
+        this.listOfData = res.data;  
+        this.total = res.total;
+        this.loading = false;
+        this.cdr.detectChanges();
+      });
     });
   }
 

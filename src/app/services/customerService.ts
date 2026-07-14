@@ -1,6 +1,5 @@
 import { Injectable } from "@angular/core";
 import { BehaviorSubject, Observable, of } from "rxjs";
-import { delay, map } from "rxjs";
 import { Customer } from "../core/models/customer";
 
 export interface PagedResult<T> {
@@ -19,7 +18,7 @@ export class CustomerService {
         { id: 3, customerCode: 'KH003', customerName: 'Lê Văn C', age: 22, address: 'TP.HCM' },
     ];
 
-    private customeer$ = new BehaviorSubject<Customer[]>(this.customers);
+    private customer$ = new BehaviorSubject<Customer[]>(this.customers);
 
     getPage(pageIndex: number, pageSize: number): Observable<PagedResult<Customer>> {
         const start = (pageIndex - 1) * pageSize;
@@ -36,19 +35,19 @@ export class CustomerService {
         const newId = Math.max(0, ...this.customers.map(c => c.id)) + 1;
         const newCustomer: Customer = { ...customer, id: newId };
         this.customers = [...this.customers, newCustomer];
-        this.customeer$.next(this.customers);
+        this.customer$.next(this.customers);
         return of(newCustomer);
     }
 
     update(customer: Customer): Observable<Customer> {
         this.customers = this.customers.map(c => c.id === customer.id ? customer : c);
-        this.customeer$.next(this.customers);
+        this.customer$.next(this.customers);
         return of(customer);
     }
 
     delete(id: number): Observable<boolean> {
         this.customers = this.customers.filter(c => c.id !== id);
-        this.customeer$.next(this.customers);
+        this.customer$.next(this.customers);
         return of(true);
     }
 

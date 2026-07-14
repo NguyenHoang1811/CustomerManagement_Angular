@@ -2,16 +2,8 @@
   + Thêm khách hàng
 </button>
 
-<nz-table
-  #basicTable
-  [nzData]="listOfData"
-  [nzFrontPagination]="false"
-  [nzTotal]="total"
-  [nzPageIndex]="pageIndex"
-  [nzPageSize]="pageSize"
-  [nzLoading]="loading"
-  (nzPageIndexChange)="onPageIndexChange($event)"
->
+<nz-table #basicTable [nzData]="listOfData" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex"
+  [nzPageSize]="pageSize" [nzLoading]="loading" (nzPageIndexChange)="onPageIndexChange($event)">
   <thead>
     <tr>
       <th>Mã KH</th>
@@ -22,7 +14,8 @@
     </tr>
   </thead>
   <tbody>
-    <tr *ngFor="let data of basicTable.data">
+    @for (data of basicTable.data; track data.id) {
+    <tr>
       <td>{{ data.customerCode }}</td>
       <td>{{ data.customerName }}</td>
       <td>{{ data.age }}</td>
@@ -35,5 +28,6 @@
         <a (click)="confirmDelete(data)" style="color: red;">Xoá</a>
       </td>
     </tr>
+    }
   </tbody>
 </nz-table>

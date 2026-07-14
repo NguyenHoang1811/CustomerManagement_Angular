@@ -20,6 +20,7 @@ type ModalMode = 'add' | 'edit' | 'view';
   imports: [CommonModule, ReactiveFormsModule, NzFormModule, NzInputModule, NzButtonModule, NzDividerModule],
   templateUrl: './customer-form-modal.html',
 })
+
 export class CustomerFormModalComponent implements OnInit {
   form!: FormGroup;
   mode: ModalMode;
