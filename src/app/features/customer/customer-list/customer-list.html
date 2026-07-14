@@ -21,11 +21,11 @@
       <td>{{ data.age }}</td>
       <td>{{ data.address }}</td>
       <td>
-        <a (click)="openViewModal(data)">Xem</a>
+        <a class="text-primary" (click)="openViewModal(data)">Xem</a>
         <nz-divider nzType="vertical"></nz-divider>
-        <a (click)="openEditModal(data)">Sửa</a>
+        <a class="text-primary" (click)="openEditModal(data)">Sửa</a>
         <nz-divider nzType="vertical"></nz-divider>
-        <a (click)="confirmDelete(data)" style="color: red;">Xoá</a>
+        <a class="text-danger" (click)="confirmDelete(data)">Xoá</a>
       </td>
     </tr>
     }

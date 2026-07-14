@@ -16,6 +16,11 @@ export class CustomerService {
         { id: 1, customerCode: 'KH001', customerName: 'Nguyễn Văn A', age: 25, address: 'Hà Nội' },
         { id: 2, customerCode: 'KH002', customerName: 'Trần Thị B', age: 30, address: 'Đà Nẵng' },
         { id: 3, customerCode: 'KH003', customerName: 'Lê Văn C', age: 22, address: 'TP.HCM' },
+        { id: 4, customerCode: 'KH004', customerName: 'Lê Văn D', age: 28, address: 'Hà Nội' },
+        { id: 5, customerCode: 'KH005', customerName: 'Lê Văn E', age: 36, address: 'Hà Nội' },
+        { id: 6, customerCode: 'KH006', customerName: 'Lê Văn F', age: 52, address: 'Đà Nẵng' },
+        { id: 7, customerCode: 'KH007', customerName: 'Lê Văn G', age: 45, address: 'TP.HCM' },
+        { id: 8, customerCode: 'KH008', customerName: 'Lê Văn H', age: 18, address: 'Đà Nẵng' },
     ];
 
     private customer$ = new BehaviorSubject<Customer[]>(this.customers);
