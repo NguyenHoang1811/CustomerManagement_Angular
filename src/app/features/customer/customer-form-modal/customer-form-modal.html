@@ -1,38 +1,38 @@
-<form nz-form [formGroup]="form" (ngSubmit)="submit()">
+<form nz-form nzLayout="horizontal" [formGroup]="form" (ngSubmit)="submit()">
   <nz-form-item>
-    <nz-form-label nzRequired>Mã khách hàng</nz-form-label>
-    <nz-form-control nzErrorTip="Mã khách hàng đã tồn tại hoặc chưa nhập">
+    <nz-form-label [nzSpan]="6" nzRequired>Mã khách hàng</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Mã khách hàng đã tồn tại hoặc chưa nhập">
       <input nz-input formControlName="customerCode" placeholder="VD: KH004" />
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
-    <nz-form-label nzRequired>Tên khách hàng</nz-form-label>
-    <nz-form-control nzErrorTip="Vui lòng nhập tên">
+    <nz-form-label [nzSpan]="6" nzRequired>Tên khách hàng</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên">
       <input nz-input formControlName="customerName" />
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
-    <nz-form-label nzRequired>Tuổi</nz-form-label>
-    <nz-form-control nzErrorTip="Tuổi không hợp lệ">
+    <nz-form-label [nzSpan]="6" nzRequired>Tuổi</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Tuổi không hợp lệ">
       <input nz-input type="number" formControlName="age" />
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
-    <nz-form-label nzRequired>Địa chỉ</nz-form-label>
-    <nz-form-control nzErrorTip="Vui lòng nhập địa chỉ">
+    <nz-form-label [nzSpan]="6" nzRequired>Địa chỉ</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập địa chỉ">
       <input nz-input formControlName="address" />
     </nz-form-control>
   </nz-form-item>
 
-  @if(mode!== 'view'){
-  <div style="text-align: right; margin-top: 16px;">
-    <button nz-button type="button" (click)="close()">Huỷ</button>
-    <button nz-button nzType="primary" type="submit" [nzLoading]="submitting" style="margin-left: 8px;">
-      Lưu
-    </button>
-  </div>
+  @if (mode !== 'view') {
+    <div style="text-align: right; margin-top: 16px;">
+      <button nz-button type="button" (click)="close()">Huỷ</button>
+      <button nz-button nzType="primary" type="submit" [nzLoading]="submitting" style="margin-left: 8px;">
+        Lưu
+      </button>
+    </div>
   }
 </form>
