@@ -2,37 +2,59 @@
   <nz-form-item>
     <nz-form-label [nzSpan]="6" nzRequired>Mã khách hàng</nz-form-label>
     <nz-form-control [nzSpan]="18" nzErrorTip="Mã khách hàng đã tồn tại hoặc chưa nhập">
-      <input nz-input formControlName="customerCode" placeholder="VD: KH004" />
+      <input nz-input [readonly]="isViewMode" formControlName="customerCode" placeholder="VD: KH004" />
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
     <nz-form-label [nzSpan]="6" nzRequired>Tên khách hàng</nz-form-label>
     <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên">
-      <input nz-input formControlName="customerName" />
+      <input nz-input [readonly]="isViewMode" formControlName="customerName" />
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
     <nz-form-label [nzSpan]="6" nzRequired>Tuổi</nz-form-label>
     <nz-form-control [nzSpan]="18" nzErrorTip="Tuổi không hợp lệ">
-      <input nz-input type="number" formControlName="age" />
+      <input nz-input [readonly]="isViewMode" type="number" formControlName="age" />
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn tỉnh/thành">
+      <nz-select formControlName="provinceCode" [nzDisabled]="isViewMode" nzPlaceHolder="Chọn tỉnh/thành">
+        @for (p of provinces; track p.code) {
+        <nz-option [nzValue]="p.code" [nzLabel]="p.name"></nz-option>
+        }
+      </nz-select>
+    </nz-form-control>
+  </nz-form-item>
+
+  <nz-form-item>
+    <nz-form-label [nzSpan]="6" nzRequired>Xã/Phường</nz-form-label>
+    <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn xã/phường">
+      <nz-select formControlName="communeCode" [nzDisabled]="isViewMode" nzPlaceHolder="Chọn xã/phường (chọn tỉnh trước)">
+        @for (c of communes; track c.code) {
+        <nz-option [nzValue]="c.code" [nzLabel]="c.name"></nz-option>
+        }
+      </nz-select>
     </nz-form-control>
   </nz-form-item>
 
   <nz-form-item>
     <nz-form-label [nzSpan]="6" nzRequired>Địa chỉ</nz-form-label>
     <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập địa chỉ">
-      <input nz-input formControlName="address" />
+      <input nz-input [readonly]="isViewMode" formControlName="address" />
     </nz-form-control>
   </nz-form-item>
 
   @if (mode !== 'view') {
-    <div style="text-align: right; margin-top: 16px;">
-      <button nz-button type="button" (click)="close()">Huỷ</button>
-      <button nz-button nzType="primary" type="submit" [nzLoading]="submitting" style="margin-left: 8px;">
-        Lưu
-      </button>
-    </div>
+  <div style="text-align: right; margin-top: 16px;">
+    <button nz-button type="button" (click)="close()">Huỷ</button>
+    <button nz-button nzType="primary" type="submit" [nzLoading]="submitting" style="margin-left: 8px;">
+      Lưu
+    </button>
+  </div>
   }
 </form>

@@ -1,6 +1,11 @@
-<button nz-button nzType="primary" (click)="openAddModal()" style="margin-bottom: 16px;">
+<div style="margin-bottom: 16px; display: flex; gap: 8px;">
+  <button nz-button nzType="primary" (click)="openAddModal()" style="margin-bottom: 16px;">
   + Thêm khách hàng
 </button>
+  <button nz-button (click)="exportToExcel()" [nzLoading]="exporting">
+    Xuất Excel
+  </button>
+</div>
 
 <nz-table #basicTable [nzData]="listOfData" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex"
   [nzPageSize]="pageSize" [nzLoading]="loading" (nzPageIndexChange)="onPageIndexChange($event)">
@@ -9,6 +14,8 @@
       <th>Mã KH</th>
       <th>Tên khách hàng</th>
       <th>Tuổi</th>
+      <th>Tỉnh/Thành phố</th>
+      <th>Xã/ Phường</th>
       <th>Địa chỉ</th>
       <th>Thao tác</th>
     </tr>
@@ -19,7 +26,9 @@
       <td>{{ data.customerCode }}</td>
       <td>{{ data.customerName }}</td>
       <td>{{ data.age }}</td>
-      <td>{{ data.address }}</td>
+      <td>{{ getProvinceName(data.provinceCode) }}</td>
+      <td>{{ getCommunedName(data.communeCode) }}</td>
+      <td>{{ data.address }}</td> 
       <td>
         <a class="text-primary" (click)="openViewModal(data)">Xem</a>
         <nz-divider nzType="vertical"></nz-divider>

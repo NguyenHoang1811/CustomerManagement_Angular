@@ -1,0 +1,67 @@
+<form #customerForm="ngForm" nz-form nzLayout="horizontal" (ngSubmit)="submit(customerForm)">
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Mã khách hàng</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Mã khách hàng đã tồn tại hoặc chưa nhập">
+            <input nz-input name="customerCode" [(ngModel)]="model.customerCode" (blur)="onCodeBlur()" required
+                [readonly]="isViewMode" placeholder="VD: KH009" />
+            @if (codeExists) {
+            <div style="color: red; font-size: 12px;">Mã khách hàng đã tồn tại</div>
+            }
+        </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Tên khách hàng</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập tên">
+            <input nz-input name="customerName" [(ngModel)]="model.customerName" required [readonly]="isViewMode" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Tuổi</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Tuổi không hợp lệ">
+            <input nz-input type="number" name="age" [(ngModel)]="model.age" required min="0" max="120"
+                [readonly]="isViewMode" />
+        </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Tỉnh/Thành</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn tỉnh/thành">
+            <nz-select name="provinceCode" [(ngModel)]="model.provinceCode" (ngModelChange)="onProvinceChange($event)"
+                required [nzDisabled]="isViewMode" nzPlaceHolder="Chọn tỉnh/thành">
+                @for (p of provinces; track p.code) {
+                <nz-option [nzValue]="p.code" [nzLabel]="p.name"></nz-option>
+                }
+            </nz-select>
+        </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Xã/Phường</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng chọn xã/phường">
+            <nz-select name="communeCode" [(ngModel)]="model.communeCode" required
+                [nzDisabled]="isViewMode||!model.provinceCode" nzPlaceHolder="Chọn xã/phường">
+                @for (c of communes; track c.code) {
+                <nz-option [nzValue]="c.code" [nzLabel]="c.name"></nz-option>
+                }
+            </nz-select>
+        </nz-form-control>
+    </nz-form-item>
+
+    <nz-form-item>
+        <nz-form-label [nzSpan]="6" nzRequired>Địa chỉ</nz-form-label>
+        <nz-form-control [nzSpan]="18" nzErrorTip="Vui lòng nhập địa chỉ">
+            <input nz-input name="address" [(ngModel)]="model.address" required [readonly]="isViewMode" />
+        </nz-form-control>
+    </nz-form-item>
+
+    @if (!isViewMode) {
+    <div style="text-align: right; margin-top: 16px;">
+        <button nz-button type="button" (click)="close()">Huỷ</button>
+        <button nz-button nzType="primary" type="submit" [nzLoading]="submitting" style="margin-left: 8px;">
+            Lưu
+        </button>
+    </div>
+    }
+</form>

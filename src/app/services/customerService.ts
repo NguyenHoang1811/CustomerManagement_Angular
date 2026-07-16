@@ -1,5 +1,5 @@
 import { Injectable } from "@angular/core";
-import { BehaviorSubject, Observable, of } from "rxjs";
+import { Observable, of } from "rxjs";
 import { Customer } from "../core/models/customer";
 import { environment } from "../../environments/environment";
 import { HttpClient } from "@angular/common/http";
@@ -29,7 +29,7 @@ export class CustomerService {
     //     { id: 7, customerCode: 'KH007', customerName: 'Lê Văn G', age: 45, address: 'TP.HCM' },
     //     { id: 8, customerCode: 'KH008', customerName: 'Lê Văn H', age: 18, address: 'Đà Nẵng' },
     // ];
-    private readonly baseUrl = `${environment.apiUrl}/customers`;
+    private readonly baseUrl = `https://8479a56e-5cfb-439c-a7c0-0618fc41109c.mock.pstmn.io/customers`;
     private customers: Customer[] = [];
     // private customer$ = new BehaviorSubject<Customer[]>(this.customers);
     private load = false;

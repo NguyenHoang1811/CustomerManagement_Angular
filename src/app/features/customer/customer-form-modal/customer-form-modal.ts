@@ -11,13 +11,17 @@ import { of } from 'rxjs';
 import { CustomerService } from '../../../services/customerService';
 import { Customer } from '../../../core/models/customer';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
+import { Commnune } from '../../../core/models/commune';
+import { PROVINCES } from '../../../core/data/provinces';
+import { COMMNUES } from '../../../core/data/communes';
+import { NzOptionComponent, NzSelectModule } from 'ng-zorro-antd/select';
 
 type ModalMode = 'add' | 'edit' | 'view';
 
 @Component({
   selector: 'app-customer-form-modal',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, NzFormModule, NzInputModule, NzButtonModule, NzDividerModule],
+  imports: [CommonModule, ReactiveFormsModule, NzFormModule, NzInputModule, NzButtonModule, NzDividerModule, NzOptionComponent, NzSelectModule],
   templateUrl: './customer-form-modal.html',
 })
 
@@ -26,6 +30,9 @@ export class CustomerFormModalComponent implements OnInit {
   mode: ModalMode;
   customer?: Customer;
   submitting = false;
+
+  provinces = PROVINCES;
+  communes: Commnune[] = [];
 
   constructor(
     private fb: FormBuilder,
@@ -42,15 +49,39 @@ export class CustomerFormModalComponent implements OnInit {
       customerCode: [
         this.customer?.customerCode ?? '',
         [Validators.required],
-        [this.customerCodeAsyncValidator()], 
+        [this.customerCodeAsyncValidator()],
       ],
       customerName: [this.customer?.customerName ?? '', [Validators.required]],
       age: [this.customer?.age ?? null, [Validators.required, Validators.min(0), Validators.max(120)]],
       address: [this.customer?.address ?? '', [Validators.required]],
+      provinceCode: [this.customer?.provinceCode ?? null, [Validators.required]],
+      communeCode: [{ value: this.customer?.communeCode ?? null, disabled: !this.customer?.provinceCode }, [Validators.required]],
     });
 
-    if (this.mode === 'view') {
-      this.form.disable();
+    if (this.customer?.provinceCode) {
+      this.updateCommunes(this.customer.provinceCode);
+    }
+    this.form.get('provinceCode')!.valueChanges.subscribe(provinceCode => {
+      this.updateCommunes(provinceCode);
+      this.form.get('communeCode')!.setValue(null);
+    });
+
+    // if (this.mode === 'view') {
+    //   this.form.disable();
+    // }
+  }
+
+  get isViewMode(): boolean {
+    return this.mode === 'view';
+  }
+
+  private updateCommunes(provinceCode: string): void {
+    this.communes = COMMNUES.filter(c => c.provinceCode === provinceCode);
+    const communeControl = this.form.get('communeCode')!;
+    if (this.communes.length > 0) {
+      communeControl.enable();
+    } else {
+      communeControl.disable();
     }
   }
 
@@ -84,7 +115,7 @@ export class CustomerFormModalComponent implements OnInit {
 
     request$.subscribe(() => {
       this.submitting = false;
-      this.modalRef.close('success'); 
+      this.modalRef.close('success');
     });
   }
 
