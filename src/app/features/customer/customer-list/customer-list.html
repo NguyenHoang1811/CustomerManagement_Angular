@@ -1,11 +1,44 @@
+<div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+  <input nz-input style="width: 220px;" placeholder="Tìm theo tên hoặc mã KH..." [(ngModel)]="keyword"
+    (ngModelChange)="onSearchChange()" />
+
+  <nz-select style="width: 170px;" [(ngModel)]="filterProvinceCode" (ngModelChange)="onFilterProvinceChange($event)"
+    nzAllowClear nzPlaceHolder="Lọc theo tỉnh/thành">
+    @for (p of provinces; track p.code) {
+    <nz-option [nzValue]="p.code" [nzLabel]="p.name"></nz-option>
+    }
+  </nz-select>
+
+  <nz-select style="width: 180px;" [(ngModel)]="filterCommuneCode" (ngModelChange)="onFilterChange()" nzAllowClear
+    [nzDisabled]="!filterProvinceCode" nzPlaceHolder="Lọc theo xã/phường">
+    @for (c of filterCommunes; track c.code) {
+    <nz-option [nzValue]="c.code" [nzLabel]="c.name"></nz-option>
+    }
+  </nz-select>
+
+  <nz-input-number style="width: 100px;" [(ngModel)]="ageFrom" (ngModelChange)="onFilterChange()" [nzMin]="0"
+    [nzMax]="120" nzPlaceHolder="Tuổi từ"></nz-input-number>
+
+  <nz-input-number style="width: 100px;" [(ngModel)]="ageTo" (ngModelChange)="onFilterChange()" [nzMin]="0"
+    [nzMax]="120" nzPlaceHolder="Tuổi đến"></nz-input-number>
+
+  <button nz-button (click)="resetFilter()">Xoá lọc</button>
+</div>
+
 <div style="margin-bottom: 16px; display: flex; gap: 8px;">
-  <button nz-button nzType="primary" (click)="openAddModal()" style="margin-bottom: 16px;">
-  + Thêm khách hàng
-</button>
+  <button nz-button nzType="primary" (click)="openAddModal()">
+    + Thêm khách hàng
+  </button>
   <button nz-button (click)="exportToExcel()" [nzLoading]="exporting">
     Xuất Excel
   </button>
+  <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onImportFileSelected($event)" />
+
+  <button nz-button (click)="fileInput.click()">
+    Nhập Excel
+  </button>
 </div>
+
 
 <nz-table #basicTable [nzData]="listOfData" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex"
   [nzPageSize]="pageSize" [nzLoading]="loading" (nzPageIndexChange)="onPageIndexChange($event)">
@@ -28,7 +61,7 @@
       <td>{{ data.age }}</td>
       <td>{{ getProvinceName(data.provinceCode) }}</td>
       <td>{{ getCommunedName(data.communeCode) }}</td>
-      <td>{{ data.address }}</td> 
+      <td>{{ data.address }}</td>
       <td>
         <a class="text-primary" (click)="openViewModal(data)">Xem</a>
         <nz-divider nzType="vertical"></nz-divider>

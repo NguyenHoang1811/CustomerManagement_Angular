@@ -1,9 +1,11 @@
 import { Injectable } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { Customer } from "../core/models/customer";
-import { environment } from "../../environments/environment";
 import { HttpClient } from "@angular/common/http";
 import { map, tap, catchError } from "rxjs";
+import { removeVietnameseTones } from "../core/ulits/string";
+import { COMMNUES } from "../core/data/communes";
+import { PROVINCES } from "../core/data/provinces";
 
 export interface PagedResult<T> {
     data: T[];
@@ -14,6 +16,24 @@ interface CustomerListResponse {
     customers: Customer[];
 }
 
+export interface CustomerFilter {
+    keyword?: string;
+    provinceCode?: string | null;
+    communeCode?: string | null;
+    ageFrom?: number | null;
+    ageTo?: number | null;
+}
+
+export interface ImportRowResult {
+    rowIndex: number;
+    data: Partial<Customer>;
+    raw: {
+        provinceName: string;
+        communeName: string;
+    };
+    valid: boolean;
+    reasons: string[];
+}
 @Injectable({
     providedIn: 'root'
 })
@@ -49,15 +69,51 @@ export class CustomerService {
             })
         );
     }
-    
 
-    getPage(pageIndex: number, pageSize: number): Observable<PagedResult<Customer>> {
+    private applyFilter(customers: Customer[], filter?: CustomerFilter): Customer[] {
+        if (!filter) return customers;
+
+        let result = customers;
+        const keyword = removeVietnameseTones(filter.keyword ?? '');
+        if (keyword) {
+            result = result.filter(c =>
+                removeVietnameseTones(c.customerCode).includes(keyword) ||
+                removeVietnameseTones(c.customerName).includes(keyword)
+            );
+        }
+
+        if (filter.provinceCode) {
+            result = result.filter(c => c.provinceCode === filter.provinceCode);
+        }
+
+        if (filter.communeCode) {
+            result = result.filter(c => c.communeCode === filter.communeCode);
+        }
+
+        if (filter.ageFrom != null) {
+            result = result.filter(c => c.age >= filter.ageFrom!);
+        }
+        if (filter.ageTo != null) {
+            result = result.filter(c => c.age <= filter.ageTo!);
+        }
+        return result;
+    }
+
+    getPage(pageIndex: number, pageSize: number, filter?: CustomerFilter): Observable<PagedResult<Customer>> {
         return this.ensureLoaded().pipe(
             map(() => {
+                const filtered = this.applyFilter(this.customers, filter);
                 const start = (pageIndex - 1) * pageSize;
-                const pageData = this.customers.slice(start, start + pageSize);
-                return { data: pageData, total: this.customers.length };
+                const pageData = filtered.slice(start, start + pageSize);
+                return { data: pageData, total: filtered.length };
             })
+        );
+    }
+
+
+    search(filter?: CustomerFilter): Observable<Customer[]> {
+        return this.ensureLoaded().pipe(
+            map(() => this.applyFilter(this.customers, filter))
         );
     }
 
@@ -110,6 +166,94 @@ export class CustomerService {
         return this.http.get<Customer>(`${this.baseUrl}/${id}`).pipe(
             catchError(() => of(undefined))
         );
+    }
+
+
+    // import excel
+    validateImportRows(rawRows: any[]): Observable<ImportRowResult[]> {
+        return this.ensureLoaded().pipe(
+            map(() => this.doValidate(rawRows))
+        );
+    }
+
+    private doValidate(rawRows: any[]): ImportRowResult[] {
+        const results: ImportRowResult[] = [];
+        const seenCodes = new Set<string>();
+        const existingCodes = new Set(this.customers.map(c => c.customerCode.toLowerCase()));
+
+        rawRows.forEach((row, index) => {
+            const reasons: string[] = [];
+
+            const customerCode = String(row['Mã khách hàng'] ?? '').trim();
+            const customerName = String(row['Tên khách hàng'] ?? '').trim();
+            const ageRaw = row['Tuổi'];
+            const age = Number(ageRaw);
+            const provinceName = String(row['Tỉnh/Thành'] ?? '').trim();
+            const communeName = String(row['Xã/Phường'] ?? '').trim();
+            const address = String(row['Địa chỉ'] ?? '').trim();
+
+            if (!customerCode) {
+                reasons.push('Thiếu mã khách hàng');
+            } else {
+                const codeLower = customerCode.toLowerCase();
+                if (existingCodes.has(codeLower)) {
+                    reasons.push('Mã khách hàng đã tồn tại trong hệ thống');
+                } else if (seenCodes.has(codeLower)) {
+                    reasons.push('Mã khách hàng bị trùng trong file import');
+                } else {
+                    seenCodes.add(codeLower);
+                }
+            }
+
+            if (!customerName) reasons.push('Thiếu tên khách hàng');
+            if (!ageRaw || isNaN(age)) {
+                reasons.push('Tuổi phải là số');
+            } else if (!Number.isInteger(age)) {
+                reasons.push('Tuổi phải là số nguyên');
+            } else if (age < 0 || age > 120) {
+                reasons.push('Tuổi không hợp lệ (0-120)');
+            }
+            if (!address) reasons.push('Thiếu địa chỉ');
+
+            const province = PROVINCES.find(
+                p => removeVietnameseTones(p.name) === removeVietnameseTones(provinceName)
+            );
+            if (!provinceName) {
+                reasons.push('Thiếu tỉnh/thành');
+            } else if (!province) {
+                reasons.push(`Tỉnh/thành "${provinceName}" không tồn tại`);
+            }
+
+            let commune;
+            if (province) {
+                commune = COMMNUES.find(
+                    c => c.provinceCode === province.code &&
+                        removeVietnameseTones(c.name) === removeVietnameseTones(communeName)
+                );
+                if (!communeName) {
+                    reasons.push('Thiếu xã/phường');
+                } else if (!commune) {
+                    reasons.push(`Xã/phường "${communeName}" không thuộc "${provinceName}"`);
+                }
+            }
+
+            results.push({
+                rowIndex: index + 2,
+                data: {
+                    customerCode,
+                    customerName,
+                    age,
+                    provinceCode: province?.code ?? '',
+                    communeCode: commune?.code ?? '',
+                    address,
+                },
+                raw: { provinceName, communeName },
+                valid: reasons.length === 0,
+                reasons,
+            });
+        });
+
+        return results;
     }
 
 }
