@@ -1,65 +1,84 @@
+<!-- customer-import-preview.html -->
+<input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onFileSelected($event)" />
 
-@if (validRows.length > 0) {
-  <h4>Danh sách hợp lệ</h4>
-  <nz-table #validTable [nzData]="validRows" [nzPageSize]="5" nzSize="small">
-    <thead>
-      <tr>
-        <th>Dòng</th><th>Mã KH</th><th>Tên</th><th>Tuổi</th>
-        <th>Tỉnh/Thành</th><th>Xã/Phường</th><th>Địa chỉ</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (row of validTable.data; track row.rowIndex) {
-        <tr>
-          <td>{{ row.rowIndex }}</td>
-          <td>{{ row.data.customerCode }}</td>
-          <td>{{ row.data.customerName }}</td>
-          <td>{{ row.data.age }}</td>
-          <td>{{ getProvinceDisplay(row) }}</td>
-          <td>{{ getCommuneDisplay(row) }}</td>
-          <td>{{ row.data.address }}</td>
-        </tr>
-      }
-    </tbody>
-  </nz-table>
-}
+<div style="display: flex; gap: 8px; align-items: center; margin-bottom: 16px;">
+  <button nz-button (click)="fileInput.click()">Chọn file</button>
+  <span>{{ fileName || 'Chưa chọn file' }}</span>
+  <button nz-button nzType="primary" [disabled]="!fileName" [nzLoading]="reading" (click)="readFile()">
+    Đọc file
+  </button>
+</div>
 
-@if (invalidRows.length > 0) {
-  <h4 style="margin-top: 16px;">Danh sách không hợp lệ</h4>
-  <nz-table #invalidTable [nzData]="invalidRows" [nzPageSize]="5" nzSize="small">
-    <thead>
-      <tr>
-        <th>Dòng</th><th>Mã KH</th><th>Tên</th><th>Tuổi</th>
-        <th>Tỉnh/Thành</th><th>Xã/Phường</th><th>Địa chỉ</th><th>Lý do</th>
-      </tr>
-    </thead>
-    <tbody>
-      @for (row of invalidTable.data; track row.rowIndex) {
-        <tr>
-          <td>{{ row.rowIndex }}</td>
-          <td>{{ row.data.customerCode }}</td>
-          <td>{{ row.data.customerName }}</td>
-          <td>{{ row.data.age }}</td>
-          <td>{{ getProvinceDisplay(row) }}</td>
-          <td>{{ getCommuneDisplay(row) }}</td>
-          <td>{{ row.data.address }}</td>
-          <td style="color: red;">{{ row.reasons.join('; ') }}</td>
-        </tr>
-      }
-    </tbody>
-  </nz-table>
+@if (hasReadFile) {
+    <nz-tabs>
+    <nz-tab [nzTitle]="'Hợp lệ (' + validRows.length + ')'">
+      <nz-table #validTable [nzData]="validRows" [nzPageSize]="5" nzSize="small">
+        <thead>
+          <tr>
+            <th>Dòng</th><th>Mã KH</th><th>Tên</th><th>Tuổi</th>
+            <th>Tỉnh/Thành</th><th>Xã/Phường</th><th>Địa chỉ</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of validTable.data; track row.rowIndex) {
+            <tr>
+              <td>{{ row.rowIndex }}</td>
+              <td>{{ row.data.customerCode }}</td>
+              <td>{{ row.data.customerName }}</td>
+              <td>{{ row.data.age }}</td>
+              <td>{{ getProvinceDisplay(row) }}</td>
+              <td>{{ getCommuneDisplay(row) }}</td>
+              <td>{{ row.data.address }}</td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+
+    <nz-tab [nzTitle]="'Không hợp lệ (' + invalidRows.length + ')'">
+      <nz-table #invalidTable [nzData]="invalidRows" [nzPageSize]="5" nzSize="small">
+        <thead>
+          <tr>
+            <th>Dòng</th><th>Mã KH</th><th>Tên</th><th>Tuổi</th>
+            <th>Tỉnh/Thành</th><th>Xã/Phường</th><th>Địa chỉ</th><th>Lý do</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of invalidTable.data; track row.rowIndex) {
+            <tr>
+              <td>{{ row.rowIndex }}</td>
+              <td>{{ row.data.customerCode }}</td>
+              <td>{{ row.data.customerName }}</td>
+              <td>{{ row.data.age }}</td>
+              <td>{{ getProvinceDisplay(row) }}</td>
+              <td>{{ getCommuneDisplay(row) }}</td>
+              <td>{{ row.data.address }}</td>
+              <td style="color: red;">
+                @if (isReasonLong(row)) {
+                  {{ getReasonShort(row) }}
+                  <a style="text-decoration: underline;" (click)="showReasonDetail(row)">Xem chi tiết</a>
+                } @else {
+                  {{ row.reasons.join('; ') }}
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </nz-table>
+    </nz-tab>
+   </nz-tabs>
 }
 
 <div style="text-align: right; margin-top: 16px;">
-    <button nz-button (click)="close()">Đóng</button>
-    @if (invalidRows.length > 0) {
+  <button nz-button (click)="close()">Đóng</button>
+  @if (hasReadFile && invalidRows.length > 0) {
     <button nz-button nzDanger (click)="exportInvalidRows()" style="margin-left: 8px;">
-        Xuất file lỗi ({{ invalidRows.length }})
+      Xuất file lỗi ({{ invalidRows.length }})
     </button>
-    }
-    @if (validRows.length > 0) {
+  }
+  @if (hasReadFile && validRows.length > 0) {
     <button nz-button nzType="primary" [nzLoading]="importing" (click)="importValidRows()" style="margin-left: 8px;">
-        Import {{ validRows.length }} khách hàng hợp lệ
+      Import {{ validRows.length }} khách hàng hợp lệ
     </button>
-    }
+  }
 </div>

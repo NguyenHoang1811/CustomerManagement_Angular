@@ -168,6 +168,12 @@ export class CustomerService {
         );
     }
 
+    getByIds(ids: number[]): Observable<Customer[]> {
+        return this.ensureLoaded().pipe(
+            map(() => this.customers.filter(c => ids.includes(c.id)))
+        );
+    }
+
 
     // import excel
     validateImportRows(rawRows: any[]): Observable<ImportRowResult[]> {

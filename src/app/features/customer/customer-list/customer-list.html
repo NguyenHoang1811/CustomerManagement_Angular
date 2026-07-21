@@ -1,8 +1,8 @@
 <div style="margin-bottom: 16px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-  <input nz-input style="width: 220px;" placeholder="Tìm theo tên hoặc mã KH..." [(ngModel)]="keyword"
-    (ngModelChange)="onSearchChange()" />
+  <input nz-input style="width: 220px;" placeholder="Tìm theo tên hoặc mã KH, Enter để tìm..." [(ngModel)]="keyword"
+    (keyup.enter)="onSearchEnter()" />
 
-  <nz-select style="width: 170px;" [(ngModel)]="filterProvinceCode" (ngModelChange)="onFilterProvinceChange($event)"
+  <nz-select style="width: 160px;" [(ngModel)]="filterProvinceCode" (ngModelChange)="onFilterProvinceChange($event)"
     nzAllowClear nzPlaceHolder="Lọc theo tỉnh/thành">
     @for (p of provinces; track p.code) {
     <nz-option [nzValue]="p.code" [nzLabel]="p.name"></nz-option>
@@ -25,25 +25,27 @@
   <button nz-button (click)="resetFilter()">Xoá lọc</button>
 </div>
 
-<div style="margin-bottom: 16px; display: flex; gap: 8px;">
-  <button nz-button nzType="primary" (click)="openAddModal()">
-    + Thêm khách hàng
-  </button>
+<div style="margin-bottom: 16px; display: flex; gap: 8px; align-items: center;">
+  <button nz-button nzType="primary" (click)="openAddModal()">+ Thêm khách hàng</button>
   <button nz-button (click)="exportToExcel()" [nzLoading]="exporting">
     Xuất Excel
   </button>
-  <input #fileInput type="file" accept=".xlsx,.xls" style="display:none" (change)="onImportFileSelected($event)" />
+  <button nz-button (click)="openImportModal()">Nhập Excel</button>
 
-  <button nz-button (click)="fileInput.click()">
-    Nhập Excel
+  @if (selectedIds.size > 0) {
+  <button nz-button nzDanger [nzLoading]="deleting" (click)="bulkDelete()">
+    Xoá {{ selectedIds.size }} mục đã chọn
   </button>
+  }
 </div>
-
 
 <nz-table #basicTable [nzData]="listOfData" [nzFrontPagination]="false" [nzTotal]="total" [nzPageIndex]="pageIndex"
   [nzPageSize]="pageSize" [nzLoading]="loading" (nzPageIndexChange)="onPageIndexChange($event)">
   <thead>
     <tr>
+      <th [nzChecked]="isAllSelectedOnPage" [nzIndeterminate]="isIndeterminate"
+        (nzCheckedChange)="toggleSelectAllOnPage($event)"></th>
+      <th>STT</th>
       <th>Mã KH</th>
       <th>Tên khách hàng</th>
       <th>Tuổi</th>
@@ -54,8 +56,10 @@
     </tr>
   </thead>
   <tbody>
-    @for (data of basicTable.data; track data.id) {
+    @for (data of basicTable.data; track data.id; let i = $index) {
     <tr>
+      <td [nzChecked]="isSelected(data.id)" (nzCheckedChange)="toggleSelect(data.id, $event)"></td>
+      <td>{{ (pageIndex - 1) * pageSize + i + 1 }}</td>
       <td>{{ data.customerCode }}</td>
       <td>{{ data.customerName }}</td>
       <td>{{ data.age }}</td>

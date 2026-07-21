@@ -1,30 +1,34 @@
 import { Component, OnInit, ChangeDetectorRef, NgZone } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { Subject } from 'rxjs';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { NzModalService, NzModalModule } from 'ng-zorro-antd/modal';
+import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzSelectModule } from 'ng-zorro-antd/select';
+import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
+import { NzCheckboxModule } from 'ng-zorro-antd/checkbox'; // 👈 thêm
 import { CommonModule } from '@angular/common';
-import { CustomerFilter, CustomerService } from '../../../services/customerService';
+import { CustomerService, CustomerFilter } from '../../../services/customerService';
 import { Customer } from '../../../core/models/customer';
 import { CustomerFormModalComponent } from '../customer-form-modal/customer-form-modal';
 import { NzDividerModule } from 'ng-zorro-antd/divider';
 import { PROVINCES } from '../../../core/data/provinces';
 import { COMMNUES } from '../../../core/data/communes';
 import { CustomerFormModalTemplate } from '../customer-form-modal-template/customer-form-modal-template';
-import * as XLSX from 'xlsx';
-import { NzInputModule } from 'ng-zorro-antd/input';
-import { NzSelectModule } from 'ng-zorro-antd/select';
-import { NzInputNumberModule } from 'ng-zorro-antd/input-number';
-import { debounceTime, Subject } from 'rxjs';
-import { FormsModule } from '@angular/forms';
 import { CustomerImportPreviewComponent } from '../customer-import-preview/customer-import-preview';
+import * as XLSX from 'xlsx';
 
 @Component({
   selector: 'app-customer-list',
   standalone: true,
-  imports: [CommonModule, NzTableModule, NzButtonModule, NzDividerModule, NzModalModule, NzInputModule, NzSelectModule, NzInputNumberModule, FormsModule],
+  imports: [
+    CommonModule, FormsModule, NzTableModule, NzButtonModule,
+    NzDividerModule, NzModalModule, NzInputModule, NzSelectModule,
+    NzInputNumberModule, NzCheckboxModule, // 👈 thêm
+  ],
   templateUrl: './customer-list.html',
 })
-
 export class CustomerListComponent implements OnInit {
   listOfData: Customer[] = [];
   total = 0;
@@ -40,7 +44,9 @@ export class CustomerListComponent implements OnInit {
   ageFrom: number | null = null;
   ageTo: number | null = null;
 
-  private searchSubject = new Subject<void>();
+
+  selectedIds = new Set<number>();
+  deleting = false;
 
   constructor(
     private customerService: CustomerService,
@@ -50,10 +56,6 @@ export class CustomerListComponent implements OnInit {
   ) { }
 
   ngOnInit(): void {
-    this.searchSubject.pipe(debounceTime(400)).subscribe(() => {
-      this.pageIndex = 1;
-      this.loadData();
-    });
     this.loadData();
   }
 
@@ -81,8 +83,9 @@ export class CustomerListComponent implements OnInit {
     this.loadData();
   }
 
-  onSearchChange(): void {
-    this.searchSubject.next();
+  onSearchEnter(): void {
+    this.pageIndex = 1;
+    this.loadData();
   }
 
   onFilterChange(): void {
@@ -113,6 +116,72 @@ export class CustomerListComponent implements OnInit {
   getCommunedName(communeCode: string): string {
     return COMMNUES.find(c => c.code === communeCode)?.name ?? '';
   }
+
+
+  isSelected(id: number): boolean {
+    return this.selectedIds.has(id);
+  }
+
+  toggleSelect(id: number, checked: boolean): void {
+    if (checked) {
+      this.selectedIds.add(id);
+    } else {
+      this.selectedIds.delete(id);
+    }
+  }
+
+  get isAllSelectedOnPage(): boolean {
+    return this.listOfData.length > 0 && this.listOfData.every(c => this.selectedIds.has(c.id));
+  }
+
+  get isIndeterminate(): boolean {
+    const someSelected = this.listOfData.some(c => this.selectedIds.has(c.id));
+    return someSelected && !this.isAllSelectedOnPage;
+  }
+
+  toggleSelectAllOnPage(checked: boolean): void {
+    this.listOfData.forEach(c => {
+      if (checked) {
+        this.selectedIds.add(c.id);
+      } else {
+        this.selectedIds.delete(c.id);
+      }
+    });
+  }
+
+  bulkDelete(): void {
+    if (this.selectedIds.size === 0) return;
+    const ids = Array.from(this.selectedIds);
+
+    this.modal.confirm({
+      nzTitle: 'Xác nhận xoá nhiều',
+      nzContent: `Bạn có chắc muốn xoá ${ids.length} khách hàng đã chọn?`,
+      nzOkDanger: true,
+      nzOnOk: () => {
+        this.ngZone.run(() => {
+          this.deleting = true;
+          this.cdr.detectChanges();
+
+          const deleteNext = (index: number): void => {
+            if (index >= ids.length) {
+              this.ngZone.run(() => {
+                this.deleting = false;
+                this.selectedIds.clear();
+                this.loadData();
+              });
+              return;
+            }
+            this.customerService.delete(ids[index]).subscribe({
+              next: () => deleteNext(index + 1),
+              error: () => deleteNext(index + 1),
+            });
+          };
+          deleteNext(0);
+        });
+      },
+    });
+  }
+
 
   openAddModal(): void {
     const modalRef = this.modal.create({
@@ -153,23 +222,34 @@ export class CustomerListComponent implements OnInit {
       nzContent: `Bạn có chắc muốn xoá khách hàng "${customer.customerName}"?`,
       nzOkDanger: true,
       nzOnOk: () => {
-        this.customerService.delete(customer.id).subscribe(() => this.loadData());
+        this.customerService.delete(customer.id).subscribe(() => {
+          this.ngZone.run(() => {   // 👈 thêm
+            this.loadData();
+          });
+        });
       },
     });
   }
+
+  openImportModal(): void {
+    const modalRef = this.modal.create({
+      nzTitle: 'Nhập khách hàng từ Excel',
+      nzContent: CustomerImportPreviewComponent,
+      nzData: {},
+      nzFooter: null,
+      nzWidth: 900,
+    });
+    modalRef.afterClose.subscribe(result => {
+      if (result === 'success') this.loadData();
+    });
+  }
+
   exporting = false;
 
   exportToExcel(): void {
     this.exporting = true;
-    const filter: CustomerFilter = {
-      keyword: this.keyword,
-      provinceCode: this.filterProvinceCode,
-      communeCode: this.filterCommuneCode,
-      ageFrom: this.ageFrom,
-      ageTo: this.ageTo,
-    };
 
-    this.customerService.search(filter).subscribe(data => {
+    const buildAndDownload = (data: Customer[]): void => {
       const exportData = data.map(c => ({
         'Mã khách hàng': c.customerCode,
         'Tên khách hàng': c.customerName,
@@ -180,17 +260,43 @@ export class CustomerListComponent implements OnInit {
       }));
 
       const worksheet = XLSX.utils.json_to_sheet(exportData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Khách hàng');
-
       worksheet['!cols'] = [
         { wch: 15 }, { wch: 25 }, { wch: 8 }, { wch: 15 }, { wch: 20 }, { wch: 30 },
       ];
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Khach hang');
 
-      const fileName = `danh-sach-khach-hang_${this.formatDate(new Date())}.xlsx`;
-      XLSX.writeFile(workbook, fileName);
+      const wbout: ArrayBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([wbout], { type: 'application/octet-stream' });
+      this.downloadBlob(blob, `danh-sach-khach-hang_${this.formatDate(new Date())}.xlsx`);
       this.exporting = false;
-    });
+    };
+
+    if (this.selectedIds.size > 0) {
+      // Có chọn -> chỉ xuất các dòng đang chọn
+      this.customerService.getByIds(Array.from(this.selectedIds)).subscribe(buildAndDownload);
+    } else {
+      // Không chọn gì -> xuất theo bộ lọc hiện tại như trước
+      const filter: CustomerFilter = {
+        keyword: this.keyword,
+        provinceCode: this.filterProvinceCode,
+        communeCode: this.filterCommuneCode,
+        ageFrom: this.ageFrom,
+        ageTo: this.ageTo,
+      };
+      this.customerService.search(filter).subscribe(buildAndDownload);
+    }
+  }
+
+  private downloadBlob(blob: Blob, fileName: string): void {
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
   }
 
   private formatDate(date: Date): string {
@@ -199,34 +305,4 @@ export class CustomerListComponent implements OnInit {
     const d = String(date.getDate()).padStart(2, '0');
     return `${y}${m}${d}`;
   }
-
-  onImportFileSelected(event: Event): void {
-    const input = event.target as HTMLInputElement;
-    const file = input.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const buffer = new Uint8Array(e.target!.result as ArrayBuffer);
-      const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const rawRows = XLSX.utils.sheet_to_json(sheet, { defval: '' });
-
-      this.customerService.validateImportRows(rawRows).subscribe(results => {
-        const modalRef = this.modal.create({
-          nzTitle: 'Kết quả kiểm tra file import',
-          nzContent: CustomerImportPreviewComponent,
-          nzData: { results },
-          nzFooter: null,
-          nzWidth: 900,
-        });
-        modalRef.afterClose.subscribe(result => {
-          if (result === 'success') this.loadData();
-        });
-      });
-    };
-    reader.readAsArrayBuffer(file);
-    input.value = '';
-  }
 }
-
